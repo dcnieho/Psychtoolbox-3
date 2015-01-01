@@ -177,7 +177,7 @@ lik         = [];
 g0          = [];
 g1          = [];
 % likelihood lookup table
-qUseLookup  = [];           % can explicitly be set to true or false by user with 
+qUseLookup  = [];           % can explicitly be set to true or false by user, if not set, will be used if look-up table is not too large 
 likLookup   = [];
 qLookupCompressed = false;  % lots of overlap between likelihoods for different probe values, compute and store in a format making use of this overlap
 
@@ -187,6 +187,14 @@ quse_subset_perc = false;   % same as above, but instead use a percentage of the
 minsetsize  = 10;           % minimum size to start subsetting
 subsetsize  = 3;            % subset contains subsetsize less datapoints than full dataset
 percsetsize = .8;           % percentage of data in set used
+
+% option, instead of evaluating all values in probeset to see what would be
+% the best to test next, do multiple iterations of a gridsearch, each time
+% testing a specified number of sampling points
+qUseGridSearch = false;
+ngriditer       = [];
+ngridsample     = [];
+gridscalefac    = [];       % factor to shrink grid by (so should be <1 to make sense)
 
 % option: set the value to test if probe history is empty
 first_value = [];           % first value to test instead of random or by prior
@@ -198,7 +206,7 @@ psychofuncStr  = 'cumGauss';
 % subfunction
 if nargin<1 || strcmpi(mode,'legacy')
     fhndl = @MinExpEntStair_internal;
-    external_funs     = {@init, @loadhistory, @loadprior, @toggle_use_resp_subset, @toggle_use_resp_subset_prop, @set_first_value, @set_use_lookup_table, @get_use_lookup_table, @set_psychometric_func, @get_psychometric_func, @get_next_probe, @process_resp, @get_history, @get_fit, @get_PSE_DL};
+    external_funs     = {@init, @loadhistory, @loadprior, @toggle_use_resp_subset, @toggle_use_resp_subset_prop, @set_use_gridsearch, @set_first_value, @set_use_lookup_table, @get_use_lookup_table, @set_psychometric_func, @get_psychometric_func, @get_next_probe, @process_resp, @get_history, @get_fit, @get_PSE_DL};
     external_funs_str = cellfun(@(x) strrep(func2str(x),[mfilename '/'],''),external_funs,'uni',false);
 elseif strcmpi(mode,'v2')
     % setup function handles
@@ -207,6 +215,7 @@ elseif strcmpi(mode,'v2')
     fhndl.loadprior                     = @loadprior;
     fhndl.toggle_use_resp_subset        = @toggle_use_resp_subset;
     fhndl.toggle_use_resp_subset_prop   = @toggle_use_resp_subset_prop;
+    fhndl.set_use_gridsearch            = @set_use_gridsearch;
     fhndl.set_first_value               = @set_first_value;
     fhndl.set_use_lookup_table          = @set_use_lookup_table;
     fhndl.get_use_lookup_table          = @get_use_lookup_table;
@@ -346,6 +355,21 @@ end
         varargout{2} = minsetsize;
         varargout{3} = percsetsize;
     end
+
+
+    %%% set use gridsearch number of iterations and number of sampling
+    %%% points to determine next probe to test
+    function [] = set_use_gridsearch(ngriditer_,ngridsample_,gridscalefac_)
+        qUseGridSearch = ngriditer_~=0;
+        ngriditer   = ngriditer_;
+        ngridsample = ngridsample_;
+        gridscalefac= gridscalefac_;
+        assert(gridscalefac>0 && gridscalefac<1,'grid search scaling factor should be >0 and <1')
+        % lookup tables are useless when doing gridsearch, disable
+        if qUseGridSearch
+            qUseLookup  = false;
+        end
+    end
                 
                 
     %%% set the first value to test. Normally the first is chosen
@@ -364,6 +388,10 @@ end
     %%% call this before calling init as lookup table computation is
     %%% triggered at end of init
     function [] = set_use_lookup_table(qUseLookup_)
+        if qUseGridSearch
+            warning('cannot request lookup table when deciding next probe by grid search, ignoring')
+            return;
+        end
         qUseLookup = qUseLookup_;
         if qUseLookup && isempty(likLookup)
             precomputeLikelihoods();
@@ -401,7 +429,6 @@ end
                 % P =   ------------------,
                 %              -(x - a)/b 
                 %        1 + e^
-                %
                 % where a and b are known as the mean (mu) and b is
                 % proportional to the standard deviation (s)
                 % http://en.wikipedia.org/wiki/Logistic_distribution
@@ -437,10 +464,8 @@ end
            [entexp,indmin]  = deal([]);
         else
             [p,entexp,indmin]   = getnextprobe;
-            if isempty(p) || isscalar(unique(loglik))
-                % if we couldn't compute expected entropy, or we have a
-                % uniform likelihood on which calculation was based
-                % (useless prior info, such as default inited), fall
+            if isempty(p)
+                % if we couldn't compute expected entropy, fall
                 % back on random probe selection
                 p                   = probeset(round(RandLim(1,1,length(probeset))));
                 [entexp,indmin]     = deal([]);
@@ -500,6 +525,13 @@ end
 % helpers (private functions, can only be called from the public
 % functions above)
     function [p,entexp,indmin] = getnextprobe
+        if isscalar(unique(loglik))
+            % if we have a uniform likelihood on which calculation was
+            % based (useless prior info, such as default inited), we can't
+            % do anything here
+            [p,entexp,indmin]   = deal([]);
+            return;
+        end
         if length(rhist)>minsetsize && (quse_subset || quse_subset_perc)
             % select subset and fit
             if quse_subset_perc
@@ -514,11 +546,43 @@ end
             thellik = loglik;
         end
         
-        entexp  = zeros(1,length(probeset));
-        for ksamp = 1:length(probeset)
+        
+        if qUseGridSearch
+            % init
+            entexp      = zeros(ngridsample*ngriditer,1);
+            ps          = zeros(ngridsample*ngriditer,1);
+            prange      = probeset(end)-probeset(1);
+            pset        = linspace(probeset(1),probeset(end),ngridsample);
+            entexpg     = getExpEntr(thelik,thellik,pset);
+            pmin        = pset(entexpg==min(entexpg));
+            entexp(1:ngridsample) = entexpg;
+                ps(1:ngridsample) = pset;
+            for p=2:ngriditer
+                prange  = prange*gridscalefac;
+                pset    = linspace(pmin-prange/2,pmin+prange/2,ngridsample);
+                entexpg = getExpEntr(thelik,thellik,pset);
+                pmin    = pset(entexpg==min(entexpg));
+                entexp((p-1)*ngridsample+1:p*ngridsample) = entexpg;
+                    ps((p-1)*ngridsample+1:p*ngridsample) = pset;
+            end
+            p       = pmin;
+            % could sort the below and determine indmin, but thats just for
+            % demo presentation, save the computations here if not needed
+            entexp  = {entexp,ps};
+            indmin  = [];
+        else
+            entexp      = getExpEntr(thelik,thellik,probeset);
+            indmin      = find(entexp == min(entexp),1);
+            p           = probeset(indmin);
+        end
+    end
+
+    function [entexp] = getExpEntr(thelik,thellik,probes)
+        entexp  = zeros(1,length(probes));
+        for ksamp = 1:length(probes)
             % p values for each possible model
             % these are used in multiple steps
-            pvalsamp    = fit_a_point(probeset(ksamp),1);
+            pvalsamp    = fit_a_point(probes(ksamp),1);
             
             % expected value is sum, weighted by lik
             pval        = sum(pvalsamp(:).*thelik(:));
@@ -540,9 +604,6 @@ end
             % use these to get expected value of entropy
             entexp(ksamp)  = ent0*(1-pval) + ent1*pval;
         end
-        
-        indmin      = find(entexp == min(entexp),1);
-        p           = probeset(indmin);        
     end
 
     function [loglik,lik] = fit_additional_data_point(loglik,probe,resp)
@@ -599,6 +660,10 @@ end
         if isempty(aset)
             % called before init, parameter space not known yet, nothing to
             % do here
+            return;
+        end
+        if qUseGridSearch
+            % of no use when doing gridsearch, return
             return;
         end
         if ~isempty(qUseLookup) && ~qUseLookup

@@ -18,7 +18,7 @@ guess       = 0.50;             % guess rate / minimum correct response rate (fo
 % general settings
 ntrial  = 40;
 qpause  = false;    % pause after every iteration? (press any key to continue)
-qplot   = false;    % plot information about each trial? (this pauses as well, regardless of whether you specified qpause as true)
+qplot   = true;    % plot information about each trial? (this pauses as well, regardless of whether you specified qpause as true)
 
 % model observer parameters 
 qusemodel = true;   % use model observer to get responses? Or, if false, input responses by hand (0/1)
@@ -45,6 +45,10 @@ stair = MinExpEntStair('v2');
 % stepsize of probeset and meanset is not equal. Call before calling
 % stair.init.
 stair.set_use_lookup_table(true);
+% option to use a gridsearch within the edges of the probe space you
+% defined to find the best next value to test, instead of testing all
+% probes in the probe set
+% stair.set_use_gridsearch(4,25,.5);
 % option: use logistic instead of default cumulative normal. best to call
 % before stair.init
 % stair('set_psychometric_func','logistic');
@@ -60,6 +64,15 @@ stair.set_first_value(3);
 for ktrial = 1:ntrial
     % trial
     [p,entexp,ind]  = stair.get_next_probe();      % get next probe to test
+    if iscell(entexp)
+        % if gridsearch, this input needs some more processing before
+        % presentation
+        [probes,i] = sort(entexp{2});
+        entexp  = entexp{1}(i);
+        ind     = find(entexp==min(entexp),1);
+    else
+        probes  = probeset;
+    end
     fprintf('%d, new sample point: %f\nexpect ent: %f\n', ...
         ktrial,p,entexp(ind));
     
@@ -95,7 +108,7 @@ for ktrial = 1:ntrial
         subplot(1,3,2);
         hold off;
         if ~isempty(entexp)
-            plot(probeset,entexp,'k-o');
+            plot(probes,entexp,'k-o');
             hold on;
             plot(ps(ktrial)*[1,1],[min(entexp),max(entexp)],'r-');
         else
@@ -133,7 +146,7 @@ fprintf('final estimates:\nPSE: %f\nDL: %f\nent: %f\n',PSEfinal,DLfinal,finalent
 % dedicated toolbox such as Prins, N & Kingdom, F. A. A. (2009) Palamedes:
 % Matlab routines for analyzing psychophysical data.
 % http://www.palamedestoolbox.org.
-% Also note that while the staircase runs far more rebust when a small
+% Also note that while the staircase runs far more robust when a small
 % lapse rate is assumed, it is common to either fit the psychometric
 % function without a lapse rate, or otherwise with the lapse rate as a free
 % parameter (possibily varying only over subjects, but not over conditions
