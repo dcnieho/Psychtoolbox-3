@@ -10,6 +10,21 @@ function inside = IsInRect(x,y,rect)
 
 % 3/5/97  dhb  Wrote it.
 % 7/26/15 dcn  Vectorized
+% 7/29/15 dcn  Now handles 4xM and Mx4 inputs
 
-inside = x >= rect(:,1) & x <= rect(:,3) & ...
-		 y >= rect(:,2) & y <= rect(:,4);
+if (size(rect, 1)==4) && (size(rect,2)>=1)
+    % 4xM
+    x = x(:).';
+    y = y(:).';
+    inside = x >= rect(1,:) & x <= rect(3,:) & ...
+             y >= rect(2,:) & y <= rect(4,:);
+elseif (size(rect, 2)==4) && (size(rect,1)>=1)
+    % Mx4
+    x = x(:);
+    y = y(:);
+    inside = x >= rect(:,1) & x <= rect(:,3) & ...
+             y >= rect(:,2) & y <= rect(:,4);
+else
+    % Something weird and unknown:
+    error('Given matrix of rects not of required 4-by-n or n-by-4 format.');
+end

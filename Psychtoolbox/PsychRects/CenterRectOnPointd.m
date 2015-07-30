@@ -18,6 +18,7 @@ function newRect = CenterRectOnPointd(rect,x,y)
 % 5/18/08  mk  Vectorized, and uses RectCenterd for non-integral results.
 % 7/27/15  dcn Fully support all vector/scalar combinations of rect x and y
 %              inputs
+% 7/29/15  dcn Now handles 4xM and Mx4 inputs
 
 [cX,cY] = RectCenterd(rect);
-newRect=OffsetRect(rect,x(:)-cX,y(:)-cY);
+newRect = OffsetRect(rect,x(:)-cX(:),y(:)-cY(:));

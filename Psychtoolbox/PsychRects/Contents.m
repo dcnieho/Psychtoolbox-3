@@ -33,11 +33,11 @@
 %     UnionRect           - Smallest rect containing two given rects.
 %
 % In general, inputs for most functions can be rects or rect-arrays. Rect
-% arrays are Mx4 matrices in which each row is a rect. The function help
-% will clarify how rect arrays are treated in the function.
-% NB: for legacy reasons, some of the functions also support 4xM
-% rect-arrays and 4x1 rects. It is however preferred to use Mx4 inputs,
-% these will work with all functions that support rect-arrays
+% arrays are 4xM or Mx4 matrices in which each row is a rect. The function
+% help will clarify how rect arrays are treated in the function.
+% NB: 4x4 inputs will be treated as 4xM input, which means it is not
+% advisable to use Mx4 rect arrays unless you are sure that M will never be
+% 4.
 
 % Copyright (c) 1997-2015 by David Brainard & Denis Pelli and the PTB
 % developers.

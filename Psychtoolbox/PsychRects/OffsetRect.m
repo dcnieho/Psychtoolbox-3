@@ -23,33 +23,32 @@ function newRect = OffsetRect(oldRect,x,y)
 %               create many offset versions of single input rect.
 % 7/27/15  dcn  Made offsetting a single rect multiple times more flexible,
 %               only x or y being a vector is allowed now. Simplified
+% 7/29/15  dcn  Now correctly handles a 4x1 input
 
 if nargin~=3
 	error('Usage:  newRect = OffsetRect(oldRect,x,y)');
 end
 
-% single rect case
+% single rect case: expand if any of the offsets are vectors
 if PsychNumel(oldRect) == 4
-    % ensure row vectors
-    oldRect = oldRect(:).';
-    
     szs = [length(x) length(y)];
-    if ~(szs(1)==1||szs(1)==szs(2)||szs(2)==1)
-        error('x and y should be both one, one can be a vector or both should be vectors of the same length')
-    end
     if ~all(szs==1)
-        % ensure column vectors
-        x = x(:);
-        y = y(:);
+        if ~(szs(1)==1||szs(1)==szs(2)||szs(2)==1)
+            error('x and y should be both one, one can be a vector or both should be vectors of the same length')
+        end
         % x, y or both are one column vectors with size(x,1) rows/elements.
         % Replicate oldRect into nrpts identical copies, then add point
         % offsets:
-        newRect = repmat(oldRect, max(szs), 1);
+        if size(oldRect, 1)==4
+            newRect = repmat(oldRect, 1, max(szs));
+        else
+            newRect = repmat(oldRect, max(szs), 1);
+        end
     end
 end
 
 % One or multiple rects:
-if size(oldRect, 1)==4
+if size(oldRect, 1)==4 && size(oldRect,2)>=1
     % ensure row vectors
     x = x(:).';
     y = y(:).';
@@ -57,7 +56,7 @@ if size(oldRect, 1)==4
     newRect(4, :) = oldRect(4, :) + y;
     newRect(1, :) = oldRect(1, :) + x;
     newRect(3, :) = oldRect(3, :) + x;
-else
+elseif (size(oldRect, 2)==4) && size(oldRect,1)>=1
     % ensure column vectors
     x = x(:);
     y = y(:);
@@ -65,4 +64,7 @@ else
     newRect(:, 4) = oldRect(:, 4) + y;
     newRect(:, 1) = oldRect(:, 1) + x;
     newRect(:, 3) = oldRect(:, 3) + x;
+else
+    % Something weird and unknown:
+    error('Given matrix of rects not of required 4-by-n or n-by-4 format.');
 end

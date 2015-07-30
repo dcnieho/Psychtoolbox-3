@@ -12,11 +12,10 @@ function isEmpty = IsEmptyRect(a)
 % 7/10/96 dgp  Wrote it.
 % 8/5/96  dgp  check rect size.
 % 7/26/15 dcn  vectorized
+% 7/29/15 dcn  Removed check for rect-array orientation, both are handled
+%              fine.
 
 if nargin~=1
 	error('Usage:  isEmpty = IsEmptyRect(a)');
-end
-if size(a,2)~=4
-	error('Wrong size rect argument. Usage:  isEmpty = IsEmptyRect(a)');
 end
 isEmpty=RectWidth(a)<=0 | RectHeight(a)<=0;
