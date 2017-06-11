@@ -28,6 +28,15 @@ function [event, nremaining] = KbEventGet(deviceIndex, maxWaitTimeSecs)
 % Or zero if key does not have a corresponding character. Or -1 if mapping
 % is unsupported for given event. This does not yet work correctly on OSX.
 %
+% 'Scancode' = Hardware scancode for pressed key. Identifies pressed key
+% independent of keyboard layout chosen in OS. Possibly hardware specific,
+% though generally should not be the case. Or -1 if scancode could not be
+% determined.
+% OS scancodes are found here:
+% Linux: <linux/input-event-codes.h>, KEY_*
+% Windows: <dinput.h>, DIK_*
+% OSX: <HIToolbox/Events.h>, kVK_*
+%
 % Keyboard event buffers are a different way to access the information
 % collected by keyboard queues. Before you can use an event buffer you
 % always must create its "parent keyboard queue" via KbQueueCreate() and
@@ -37,7 +46,7 @@ function [event, nremaining] = KbEventGet(deviceIndex, maxWaitTimeSecs)
 % _________________________________________________________________________
 %
 % See also: KbQueueCreate, KbQueueStart, KbQueueStop, KbQueueCheck,
-%            KbQueueWait, KbQueueFlush, KbQueueRelease
+%           KbQueueWait, KbQueueFlush, KbQueueRelease
 
 % 21.5.2012  mk  Wrote it.
 
