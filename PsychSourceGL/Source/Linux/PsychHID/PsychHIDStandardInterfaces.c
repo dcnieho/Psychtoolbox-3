@@ -524,6 +524,7 @@ void KbQueueProcessEvents(psych_bool blockingSinglepass)
         // assigned something else if keypress/release events from real keyboards
         // or keypads are processed:
         evt.cookedEventCode = -1;
+        evt.scanCode = -1;
 
         // Is this an event we're interested in?
         if ((cookie->type == GenericEvent) && (cookie->extension == xi_opcode)) {

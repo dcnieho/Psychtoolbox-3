@@ -704,6 +704,7 @@ static void PsychHIDKbQueueCallbackFunction(void *target, IOReturn result, void 
 
         // Cooked key code defaults to "unhandled", and stays that way for anything but keyboards:
         evt.cookedEventCode = -1;
+        evt.scanCode        = -1;
 
         // For real keyboards we can compute cooked key codes: Requires OSX 10.5 or later.
         if (queueIsAKeyboard[deviceIndex]) {
@@ -717,6 +718,7 @@ static void PsychHIDKbQueueCallbackFunction(void *target, IOReturn result, void 
 
                 // Step 1: Map HID usage value to virtual keycode via LUT:
                 uint16_t vcKey = kHID2VKC[keysUsage];
+                evt.scanCode = vcKey;
 
                 // Keep track of SHIFT keys as modifier keys: Bits 0 == Command, 1 == Shift, 2 == CapsLock, 3 == Alt/Option, 4 == CTRL
                 if ((vcKey == kVKC_Shift || vcKey == kVKC_rShift) && (eventValue != 0)) modifierKeyState[deviceIndex] |=  (1 << 1);
