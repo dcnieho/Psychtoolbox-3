@@ -686,7 +686,6 @@ void KbQueueProcessEvents(psych_bool blockingSinglepass)
                 // Map to key code and key state:
                 keycode = event.dwOfs & 0xff;
                 keystate = event.dwData & 0x80;
-                        mexPrintf("%d\n",keycode);
 
                 // Remap keycode into target slot in our arrays, depending on input device:
                 switch (info[i].dwDevType & 0xff) {
