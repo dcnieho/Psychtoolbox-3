@@ -138,6 +138,7 @@ struct PsychHIDEventRecord_Struct {
     unsigned int status;        // Status: Bit zero = press(1) or release(0) of key/button?
     int rawEventCode;           // Raw button/key code as returned by KbCheck, KbQueueCheck et al.
     int cookedEventCode;        // Translated key code, e.g., GetChar() style. May be same as rawEventCode
+    int scanCode;               // Scan code of button as returned by HID device
 };
 
 typedef struct PsychHIDEventRecord_Struct PsychHIDEventRecord;

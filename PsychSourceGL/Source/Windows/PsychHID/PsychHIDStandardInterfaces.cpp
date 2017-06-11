@@ -681,10 +681,12 @@ void KbQueueProcessEvents(psych_bool blockingSinglepass)
 
                 // Init character code to "unmapped": It will stay like that for anything but real keyboards:
                 evt.cookedEventCode = -1;
+                evt.scanCode = -1;
 
                 // Map to key code and key state:
                 keycode = event.dwOfs & 0xff;
                 keystate = event.dwData & 0x80;
+                        mexPrintf("%d\n",keycode);
 
                 // Remap keycode into target slot in our arrays, depending on input device:
                 switch (info[i].dwDevType & 0xff) {
@@ -701,6 +703,7 @@ void KbQueueProcessEvents(psych_bool blockingSinglepass)
                         if (GetAsyncKeyState(VK_RCONTROL)) keyboardState[VK_RCONTROL] = 0x80;
 
                         memset(asciiValue, 0, sizeof(asciiValue));
+                        evt.scanCode = keycode; // Store raw scancode before we map the device keycode below to the keyboard's layout into account
                         nChar = ToAsciiEx(MapVirtualKeyEx(keycode, 1, GetKeyboardLayout(0)), keycode, keyboardState, (LPWORD) &(asciiValue[0]), 0, GetKeyboardLayout(0));
                         switch (nChar) {
                             case -1:
@@ -784,7 +787,7 @@ void KbQueueProcessEvents(psych_bool blockingSinglepass)
 
                     // Update event buffer:
                     evt.timestamp = tnow;
-                    evt.rawEventCode = keycode + 1;
+                    evt.rawEventCode = keycode + 1; // NB: has been mapped to key in current keyboard layout, no longer is raw scancode
                     PsychHIDAddEventToEventBuffer(i, &evt);
 
                     // Tell waiting userspace (under KbQueueMutex protection for better scheduling) something interesting has changed:

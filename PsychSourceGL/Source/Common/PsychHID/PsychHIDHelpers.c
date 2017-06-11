@@ -359,7 +359,7 @@ int PsychHIDReturnEventFromEventBuffer(int deviceIndex, int outArgIndex, double 
     PsychHIDEventRecord evt;
     PsychGenericScriptType *retevent;
     double* foo = NULL;
-    const char *FieldNames[] = { "Time", "Pressed", "Keycode", "CookedKey" };
+    const char *FieldNames[] = { "Time", "Pressed", "Keycode", "CookedKey", "Scancode" };
 
     if (deviceIndex < 0) deviceIndex = PsychHIDGetDefaultKbQueueDevice();
     if (!hidEventBuffer[deviceIndex]) return(0);
@@ -390,6 +390,7 @@ int PsychHIDReturnEventFromEventBuffer(int deviceIndex, int outArgIndex, double 
         PsychSetStructArrayDoubleElement("Pressed",     0, (double)(evt.status & (1 << 0)) ? 1 : 0, retevent);
         PsychSetStructArrayDoubleElement("Keycode",     0, (double)evt.rawEventCode,                retevent);
         PsychSetStructArrayDoubleElement("CookedKey",   0, (double)evt.cookedEventCode,             retevent);
+        PsychSetStructArrayDoubleElement("Scancode",    0, (double)evt.scanCode,                    retevent);
         return navail - 1;
     }
     else {
