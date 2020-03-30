@@ -186,12 +186,12 @@ PsychError SCREENShowCursorHelper(void)
                 break;
 
             case 4:
-                // north-south cursor:
+                // Double-pointed arrow pointing north and south:
                 lpCursorName = IDC_SIZENS;
                 break;
 
             case 5:
-                // east-west cursor:
+                // Double-pointed arrow pointing west and east:
                 lpCursorName = IDC_SIZEWE;
                 break;
 
@@ -208,6 +208,16 @@ PsychError SCREENShowCursorHelper(void)
             case 8:
                 // IBeam/text cursor:
                 lpCursorName = IDC_IBEAM;
+                break;
+
+            case 9:
+                // Double-pointed arrow pointing northeast and southwest:
+                lpCursorName = IDC_SIZENESW;
+                break;
+
+            case 10:
+                // Double-pointed arrow pointing northwest and southeast:
+                lpCursorName = IDC_SIZENWSE;
                 break;
 
             default:
