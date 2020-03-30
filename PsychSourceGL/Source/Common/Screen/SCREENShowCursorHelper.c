@@ -220,6 +220,21 @@ PsychError SCREENShowCursorHelper(void)
                 lpCursorName = IDC_SIZENWSE;
                 break;
 
+            case 11:
+                // Standard arrow and small hourglass:
+                lpCursorName = IDC_APPSTARTING;
+                break;
+
+            case 12:
+                // Arrow and question mark:
+                lpCursorName = IDC_HELP;
+                break;
+
+            case 13:
+                // Vertical arrow:
+                lpCursorName = IDC_UPARROW;
+                break;
+
             default:
                 // Default for unknown id is the standard arrow cursor:
                 lpCursorName = IDC_ARROW;
